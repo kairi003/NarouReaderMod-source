@@ -5,6 +5,10 @@ import android.util.Log;
 
 import com.tscsoft.naroureader.beans.ListBean;
 import com.tscsoft.naroureader.http.HttpGet;
+import com.tscsoft.naroureader.presenters.ViewerActivityPresenter;
+import com.tscsoft.naroureader.services.ServiceItem;
+import com.tscsoft.naroureader.settings.GS;
+import com.tscsoft.naroureader.settings.ViewerSetting;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -15,10 +19,26 @@ import java.net.URL;
 
 public class Modding {
     public static String patchNovelHtml(String baseHtml, HttpGet httpGet, ListBean listBean) throws IOException, InterruptedException {
-        Log.d("NarouModding", "patchNovelHtml: " + listBean.getUrl());
+        Log.d("NarouModding", "patchNovelHtml()");
+        Log.d("NarouModding", "listBean: " + listBean);
+        Log.d("NarouModding", "listBean.url: " + listBean.getUrl());
+        Log.d("NarouModding", "listBean.workMode: " + listBean.getWorkMode());
+        Log.d("NarouModding", "listBean.prevAllNo: " + listBean.getPrevAllNo());
+        if (listBean.isShort() || listBean.getAllNo() <= 100) return baseHtml;
         Document baseDoc = Jsoup.parse(baseHtml);
         Element baseIndexBox = baseDoc.selectFirst(".index_box");
         if (baseIndexBox == null) return baseHtml;
+
+        int pageNo = 1 + Math.max(listBean.getPrevAllNo() - 1, 0) / 100;
+        boolean needMinIndexUpdate = GS.gs().needMinIndexUpdate();
+        Log.d("NarouModding", "pageNo: " + pageNo);
+        Log.d("NarouModding", "needMinIndexUpdate: " + needMinIndexUpdate);
+        if (needMinIndexUpdate && listBean.getWorkMode() == ServiceItem.WorkMode.FullCheck && pageNo > 1) {
+            URL url = new URL(httpGet.getActualUrl(), "?p=" + pageNo);
+            Log.d("NarouModding", "Load start from: " + url);
+            String html = httpGet.get(url.toExternalForm());
+            baseDoc = Jsoup.parse(html);
+        }
 
         Element nextPager = baseDoc.selectFirst("a.novelview_pager-next[href]");
         URL url = httpGet.getActualUrl();
@@ -45,5 +65,18 @@ public class Modding {
             nextPager = doc.selectFirst("a.novelview_pager-next[href]");
         }
         return baseDoc.outerHtml();
+    }
+
+    public static void switchViewerMode(ViewerActivityPresenter presenter) {
+        GS gs = GS.gs();
+        switch (gs.getViewerMode()) {
+            case HorizontalScroll:
+                gs.setViewerMode(ViewerSetting.ViewMode.VerticalPaging);
+                break;
+            case VerticalPaging:
+                gs.setViewerMode(ViewerSetting.ViewMode.HorizontalScroll);
+                break;
+        }
+        presenter.onViewerPreferenceReload();
     }
 }
