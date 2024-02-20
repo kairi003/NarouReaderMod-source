@@ -79,4 +79,15 @@ public class Modding {
         }
         presenter.onViewerPreferenceReload();
     }
+
+    public static String getLastIndexPageHtml(String html, HttpGet httpGet) throws IOException {
+        if (TextUtils.isEmpty(html)) return html;
+        Document doc = Jsoup.parse(html);
+        Element lastPager = doc.selectFirst("a.novelview_pager-last[href]");
+        if (lastPager == null) return html;
+        URL url = new URL(httpGet.getActualUrl(), lastPager.attr("href"));
+        Log.d("NarouModding", "Fetch: " + url);
+        String lastHtml = httpGet.get(url.toExternalForm());
+        return lastHtml;
+    }
 }
