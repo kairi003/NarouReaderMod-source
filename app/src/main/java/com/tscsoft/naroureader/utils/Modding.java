@@ -16,8 +16,22 @@ import org.jsoup.nodes.Element;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Modding {
+    public static final Pattern PATTERN_PAGE_LINK = Pattern.compile("/n\\d{4}[a-z]+/(\\d+?)/");
+
+    private static int getUpdateStartNo(Document doc) {
+        Element firstLink = doc.selectFirst(".index_box .subtitle a[href]");
+        if (firstLink == null) return 0;
+        String firstLinkHref = firstLink.attr("href");
+        Matcher matcher = PATTERN_PAGE_LINK.matcher(firstLinkHref);
+        if (!matcher.find()) return 0;
+        String firstLinkNo = matcher.group(1);
+        if (firstLinkNo == null) return 0;
+        return Integer.parseInt(firstLinkNo);
+    }
     public static String patchNovelHtml(String baseHtml, HttpGet httpGet, ListBean listBean) throws IOException, InterruptedException {
         Log.d("NarouModding", "patchNovelHtml()");
         Log.d("NarouModding", "listBean: " + listBean);
@@ -38,6 +52,9 @@ public class Modding {
             Log.d("NarouModding", "Load start from: " + url);
             String html = httpGet.get(url.toExternalForm());
             baseDoc = Jsoup.parse(html);
+            int updateStartNo = getUpdateStartNo(baseDoc);
+            listBean.setUpdateStartNo(updateStartNo);
+            Log.d("NarouModding", "updateStartNo: " + updateStartNo);
         }
 
         Element nextPager = baseDoc.selectFirst("a.novelview_pager-next[href]");
