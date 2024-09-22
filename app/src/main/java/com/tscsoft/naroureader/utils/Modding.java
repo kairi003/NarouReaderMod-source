@@ -23,7 +23,7 @@ public class Modding {
     public static final Pattern PATTERN_PAGE_LINK = Pattern.compile("/n\\d{4}[a-z]+/(\\d+?)/");
 
     private static int getUpdateStartNo(Document doc) {
-        Element firstLink = doc.selectFirst(".index_box .subtitle a[href]");
+        Element firstLink = doc.selectFirst(".p-eplist .p-eplist__subtitle a[href]");
         if (firstLink == null) return 0;
         String firstLinkHref = firstLink.attr("href");
         Matcher matcher = PATTERN_PAGE_LINK.matcher(firstLinkHref);
@@ -40,7 +40,7 @@ public class Modding {
         Log.d("NarouModding", "listBean.prevAllNo: " + listBean.getPrevAllNo());
         if (listBean.isShort() || listBean.getAllNo() <= 100) return baseHtml;
         Document baseDoc = Jsoup.parse(baseHtml);
-        Element baseIndexBox = baseDoc.selectFirst(".index_box");
+        Element baseIndexBox = baseDoc.selectFirst(".p-eplist");
         if (baseIndexBox == null) return baseHtml;
 
         int pageNo = 1 + Math.max(listBean.getPrevAllNo() - 1, 0) / 100;
@@ -57,7 +57,7 @@ public class Modding {
             Log.d("NarouModding", "updateStartNo: " + updateStartNo);
         }
 
-        Element nextPager = baseDoc.selectFirst("a.novelview_pager-next[href]");
+        Element nextPager = baseDoc.selectFirst("a.c-pager__item--next[href]");
         URL url = httpGet.getActualUrl();
 
         while (nextPager != null) {
@@ -75,12 +75,13 @@ public class Modding {
             if (!httpGet.isSuccessful() || TextUtils.isEmpty(html))
                 break;
             Document doc = Jsoup.parse(html);
-            Element indexBox = doc.selectFirst(".index_box");
+            Element indexBox = doc.selectFirst(".p-eplist");
             if (indexBox == null)
                 break;
             baseIndexBox.append(indexBox.html());
-            nextPager = doc.selectFirst("a.novelview_pager-next[href]");
+            nextPager = doc.selectFirst("a.c-pager__item--next[href]");
         }
+        // Log.d("NarouModding", baseDoc.outerHtml());
         return baseDoc.outerHtml();
     }
 
@@ -100,7 +101,7 @@ public class Modding {
     public static String getLastIndexPageHtml(String html, HttpGet httpGet) throws IOException {
         if (TextUtils.isEmpty(html)) return html;
         Document doc = Jsoup.parse(html);
-        Element lastPager = doc.selectFirst("a.novelview_pager-last[href]");
+        Element lastPager = doc.selectFirst("a.c-pager__item--last[href]");
         if (lastPager == null) return html;
         URL url = new URL(httpGet.getActualUrl(), lastPager.attr("href"));
         Log.d("NarouModding", "Fetch: " + url);
